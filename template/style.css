@@ -1,0 +1,71 @@
+html {
+    box-sizing: border-box;
+    font-family: 'Open Sans', 'sans-serif';
+    background-color: #fff;
+    color: #444;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    margin: auto;
+    padding: 2rem;
+    max-width: 940px;
+}
+
+
+footer {
+}
+
+h1, p {
+    margin: 0 0 1em 0;
+}
+
+h1, h2, h3 {
+    font-family: "Montserrat", Calibri, sans-serif;
+}
+
+th {
+    font-family: "Montserrat", Calibri, sans-serif;
+}
+
+.clearfix {
+    clear:both;
+}
+
+.logo {
+    max-width: 5cm;
+    max-height: 1cm;
+}
+
+.logo > img {
+    max-width: inherit;
+}
+
+/* LAYOUT */
+#company {
+    float: left;
+    width: 5cm;
+}
+
+#client {
+    float: right;
+    width: 5cm;
+}
+
+td {
+    vertical-align: top;
+}
+
+td, th {
+    padding: 10px;
+}
+
+header {
+    display: block;
+    margin-bottom: 4rem;
+}
+
+footer {
+    font-size: 0.8em;
+}
