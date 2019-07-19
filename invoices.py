@@ -10,7 +10,7 @@ import locale
 import datetime
 import codecs
 
-DEBUG = False
+DEBUG = True
 # Placeholders, required for GDquest
 EUROPE_COUNTRY_CODES = ['IRL']
 MENTION_AUTOLIQUIDATION = 'Autoliquidation de la TVA, article 259 du Code Général des Impôts'
@@ -20,8 +20,14 @@ def get_config(path):
     with open(path) as data:
         return json.loads(data.read())
 
+# Setting up main data variables
+data = get_config('./data/config.json')
+config = data['config']
+company = data['company']
+options = data['settings']
 
-def parse_invoice_date(date_string, options):
+
+def parse_invoice_date(date_string):
     date, payment_date = None, None
 
     # PayPal csv date format: dd/mm/yyyy
@@ -53,7 +59,10 @@ def parse_html_template(html_doc):
     return invoice_template, re_matches
 
 
+# TODO: currently doesn't work, create a working product DB object
 def get_product_from_id(product_id):
+    return {}
+
     product = {}
 
     if product_id.isdigit():
@@ -69,7 +78,7 @@ def get_product_from_id(product_id):
     return product
 
 
-def convert_invoice_to_html(invoice_data, company):
+def convert_invoice_to_html(invoice_data, invoice_template, re_matches):
     invoice_template_copy = list(invoice_template)
 
     # PRODUCT
@@ -133,16 +142,17 @@ def get_currency_symbol(currency):
 
 
 def get_payment_details(option):
-    option_string = option.lower()
-    if not option_string in options['payment_options'].keys():
+    option = option.lower()
+    if not option in options['payment_options'].keys():
         return ''
-    return options['payment_options'][option_string]
+    return options['payment_options'][option]
 
 
 def prepare_invoice_data():
     db = []
+    file_path = config['database_path']
     try:
-        with codecs.open(config['database_path'], 'r', encoding='utf-8') as csv_file:
+        with codecs.open(file_path, 'r', encoding='utf-8') as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
             header = next(csv_reader)
 
@@ -179,7 +189,7 @@ def prepare_invoice_data():
                 if DEBUG and invoice_index >= options['debug']['csv_max_parsed_rows']:
                     break
     except FileNotFoundError:
-        logging.warning('File {} not found'.format())
+        logging.warning('File {} not found'.format(file_path))
     except OSError:
         logging.warning('Could not open the file')
     return db
@@ -205,15 +215,15 @@ def set_up_output_directory(path):
         os.makedirs(path)
     css_output_path = os.path.join(path, 'style.css')
     if not os.path.exists(css_output_path):
-        shutil.copy('style.css', css_output_path)
+        shutil.copy('template/style.css', css_output_path)
     img_output_path = os.path.join(path, 'img')
     if not os.path.exists(img_output_path):
         shutil.copytree('img', img_output_path)
 
 
-def generate_html_files(invoices_database, company, config, output_path):
+def generate_html_files(invoices_database, output_path, invoice_template, re_matches):
     for invoice in invoices_database:
-        invoice_as_html = convert_invoice_to_html(invoice, company)
+        invoice_as_html = convert_invoice_to_html(invoice, invoice_template, re_matches)
 
         export_date = datetime.datetime.strptime(invoice['invoice']['date'], config['date_format'])
         export_date_string = export_date.strftime('%Y-%m-%d')
@@ -226,6 +236,9 @@ def generate_html_files(invoices_database, company, config, output_path):
 
 
 def render_pdfs(html_output_folder, pdf_output_folder):
+    if not os.path.exists(pdf_output_folder):
+        os.makedirs(pdf_output_folder)
+
     for filename in os.listdir(html_output_folder):
         name = os.path.splitext(filename)[0]
         html_filepath = os.path.join(html_output_folder, filename)
@@ -233,13 +246,8 @@ def render_pdfs(html_output_folder, pdf_output_folder):
 
 
 def main():
-    # Setting up main data variables
-    data = get_config('./data/config.json')
-    config = data['config']
-    company = data['company']
-    options = data['settings']
     options['payment_options']['paypal'] = 'PayPal address: ' + company['paypal']
-    with codecs.open('bank-details.html', 'r', encoding='utf-8') as html_doc:
+    with codecs.open('template/bank-details.html', 'r', encoding='utf-8') as html_doc:
         options['payment_options']['wire'] = html_doc.read()
 
     db_file_name = os.path.splitext(os.path.basename(config['database_path']))[0]
@@ -247,23 +255,25 @@ def main():
     html_output_folder = os.path.join(output_folder, 'html')
     pdf_output_folder = os.path.join(output_folder, 'pdf')
 
-    locale.setlocale(locale.LC_TIME, config['locale'])
+    locale.setlocale(locale.LC_ALL, '')
     # product_database = parse_product_database('./data/products_database.csv')
 
+    # TODO: turn InvoiceTemplate into an object you can pass around
+    invoice_template, re_matches = [], []
     with codecs.open(config['html_template_path'], 'r', encoding='utf-8') as html_doc:
         invoice_template, re_matches = parse_html_template(html_doc)
         if not invoice_template:
             logging.error('Could not load the invoice template. Aborting operation.')
-            return
         if not re_matches:
             logging.error('Missing {{ indentifier }} templates to replace in the html template. Aborting operation.')
-            return
+    if not invoice_template:
+        return
 
     # Main logic
     invoices_database = prepare_invoice_data()
     set_up_output_directory(html_output_folder)
-    generate_html_files(invoices_database, company, config, html_output_folder)
+    generate_html_files(invoices_database, html_output_folder, invoice_template, re_matches)
     render_pdfs(html_output_folder, pdf_output_folder)
 
-if __name__ == 'main':
+if __name__ == '__main__':
     main()
