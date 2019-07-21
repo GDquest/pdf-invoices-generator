@@ -10,15 +10,19 @@ import locale
 import datetime
 import codecs
 
+from modules.invoice import Invoice, InvoiceTemplate
+
 DEBUG = True
 # Placeholders, required for GDquest
 EUROPE_COUNTRY_CODES = ['IRL']
 MENTION_AUTOLIQUIDATION = 'Autoliquidation de la TVA, article 259 du Code Général des Impôts'
 MENTION_EXONERATION = 'Éxonération de TVA, art. 262 I du Code Général des Impôts'
 
+
 def get_config(path):
     with open(path) as data:
         return json.loads(data.read())
+
 
 # Setting up main data variables
 data = get_config('./data/config.json')
@@ -35,28 +39,6 @@ def parse_invoice_date(date_string):
     payment_date = date + datetime.timedelta(days=options['payment_date_delay'])
 
     return date, payment_date
-
-
-def parse_html_template(html_doc):
-    invoice_template, re_matches = [], []
-
-    line_id = 0
-    for line in html_doc:
-        match = re.match(r'.+{{ (.*) }}', line)
-        if match:
-            identifier = match.group(1)
-
-            # Pre-replace company details
-            if identifier.startswith('company'):
-                category, key = identifier.split('_', maxsplit=1)
-                string_template = '{{ ' + identifier + ' }}'
-                line = line.replace(string_template, company[key], 1)
-            else:
-                re_matches.append((line_id, match.group(1)))
-        invoice_template.append(line)
-        line_id += 1
-
-    return invoice_template, re_matches
 
 
 # TODO: currently doesn't work, create a working product DB object
@@ -78,9 +60,7 @@ def get_product_from_id(product_id):
     return product
 
 
-def convert_invoice_to_html(invoice_data, invoice_template, re_matches):
-    invoice_template_copy = list(invoice_template)
-
+def convert_to_html(invoice_data, invoice_template):
     # PRODUCT
     # TODO: to support multiple products, parse products in a separate function
     # Use a separate html template (one <tr> per product)
@@ -115,20 +95,7 @@ def convert_invoice_to_html(invoice_data, invoice_template, re_matches):
     invoice_data['total']['excl_tax'] = total_tax_excl
     invoice_data['total']['tax'] = total_VAT
     invoice_data['total']['incl_tax'] = total_tax_excl + total_VAT
-
-    # REPLACE VALUES
-    for index, identifier in re_matches:
-        string_template = '{{ ' + identifier + ' }}'
-        category, key = identifier.split('_', maxsplit=1)
-        try:
-            replace_value = invoice_data[category][key]
-        except:
-            replace_value = identifier
-            logging.warning('Could not find matching value for {!s}'.format(identifier))
-        if identifier in ['product_unit_price', 'product_total_tax_excl', 'total_discount', 'total_excl_tax', 'total_tax', 'total_incl_tax']:
-            replace_value = str(replace_value) + invoice_data['invoice']['currency']
-        invoice_template_copy[index] = invoice_template_copy[index].replace(string_template, str(replace_value), 1)
-    return invoice_template_copy
+    return invoice_template.get_invoice_html(invoice_data)
 
 
 def get_currency_symbol(currency):
@@ -221,18 +188,18 @@ def set_up_output_directory(path):
         shutil.copytree('img', img_output_path)
 
 
-def generate_html_files(invoices_database, output_path, invoice_template, re_matches):
+def generate_html_files(invoices_database, output_path, invoice_template):
     for invoice in invoices_database:
-        invoice_as_html = convert_invoice_to_html(invoice, invoice_template, re_matches)
+        invoice_html = convert_to_html(invoice, invoice_template)
 
-        export_date = datetime.datetime.strptime(invoice['invoice']['date'], config['date_format'])
-        export_date_string = export_date.strftime('%Y-%m-%d')
+        date = datetime.datetime.strptime(invoice['invoice']['date'], config['date_format'])
+        date_string = date.strftime('%Y-%m-%d')
         client_name = invoice['client']['name'].replace(' ', '-').lower()
 
         file_name = '{}-{}.html'.format(invoice['invoice']['index'], client_name)
-        export_path = '{}/{}-{}'.format(output_path, export_date_string, file_name)
+        export_path = '{}/{}-{}'.format(output_path, date_string, file_name)
         with codecs.open(export_path, 'w', encoding='utf-8') as invoice_file:
-            invoice_file.writelines(invoice_as_html)
+            invoice_file.writelines(invoice_html)
 
 
 def render_pdfs(html_output_folder, pdf_output_folder):
@@ -259,21 +226,15 @@ def main():
     # product_database = parse_product_database('./data/products_database.csv')
 
     # TODO: turn InvoiceTemplate into an object you can pass around
-    invoice_template, re_matches = [], []
-    with codecs.open(config['html_template_path'], 'r', encoding='utf-8') as html_doc:
-        invoice_template, re_matches = parse_html_template(html_doc)
-        if not invoice_template:
-            logging.error('Could not load the invoice template. Aborting operation.')
-        if not re_matches:
-            logging.error('Missing {{ indentifier }} templates to replace in the html template. Aborting operation.')
-    if not invoice_template:
+    template = InvoiceTemplate(config['html_template_path'], company)
+    if template.is_invalid():
         return
 
     # Main logic
     invoices_database = prepare_invoice_data()
     set_up_output_directory(html_output_folder)
-    generate_html_files(invoices_database, html_output_folder, invoice_template, re_matches)
-    render_pdfs(html_output_folder, pdf_output_folder)
+    generate_html_files(invoices_database, html_output_folder, template)
+    # render_pdfs(html_output_folder, pdf_output_folder)
 
 if __name__ == '__main__':
     main()
