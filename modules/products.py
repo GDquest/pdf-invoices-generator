@@ -1,5 +1,6 @@
 import logging
 
+
 class ProductsDatabase:
     """
     Stores a list of products.
@@ -21,5 +22,7 @@ class ProductsDatabase:
                     return
                 product = self.products[index]
         if not product:
-            logging.warning('Could not find product id {!s}, returning None'.format(identifier))
+            logging.warning(
+                "Could not find product id {!s}, returning None".format(identifier)
+            )
         return product
