@@ -3,6 +3,7 @@ import re
 import os
 import datetime
 import options
+from client import Client
 
 
 class Invoice:
@@ -10,21 +11,7 @@ class Invoice:
         self.invoice_date, self.payment_date = self.parse_date(date_string)
         self.index = index
 
-        # 'client': {
-        #     'name': client.name,
-        #     'country_code': client.country_code,
-        #     'VAT_number': client.VAT_number,
-        #     'address': client.address
-        # },
         self.client = client
-
-        # 'product': {
-        #     'name': product.name,
-        #     'quantity': product.quantity,
-        #     'unit_price': product.unit_price,
-        #     'VAT_rate': product.VAT_rate,
-        #     'total_tax_excl': product.total_tax_excl
-        # },
         self.product = product
         self.data = {
             "invoice": {
