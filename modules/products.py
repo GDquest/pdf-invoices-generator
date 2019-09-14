@@ -1,6 +1,14 @@
 import logging
 
 
+class Product:
+    def __init__(self, identifier, price, quantity=1, VAT_rate=0.0):
+        self.identifier = identifier
+        self.price = price
+        self.quantity = quantity
+        self.VAT_rate = VAT_rate
+
+
 class ProductsDatabase:
     """
     Stores a list of products.
@@ -26,3 +34,13 @@ class ProductsDatabase:
                 "Could not find product id {!s}, returning None".format(identifier)
             )
         return product
+
+    def parse_database(self, path):
+        products = []
+        with open(path, "r") as csv_file:
+            reader = csv.reader(csv_file)
+            next(reader)
+            for row in reader:
+                product = Product(row[0], float(row[1]))
+                products.append(product)
+        return products
