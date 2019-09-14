@@ -34,18 +34,19 @@ th {
 }
 
 .logo {
-    max-width: 5cm;
-    max-height: 1cm;
+    max-width: 4cm;
+    max-height: 1.5cm;
 }
 
 .logo > img {
     max-width: inherit;
+    max-height: inherit;
 }
 
 /* LAYOUT */
 #company {
     float: left;
-    width: 5cm;
+    width: 6cm;
 }
 
 #client {
