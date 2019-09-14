@@ -11,6 +11,9 @@ import datetime
 import codecs
 
 from modules.invoice import Invoice, InvoiceTemplate
+from modules.client import Client
+from modules.products import Product
+
 
 DEBUG = True
 # Placeholders, required for GDquest
@@ -31,16 +34,6 @@ data = get_config("./data/config.json")
 config = data["config"]
 company = data["company"]
 options = data["settings"]
-
-
-def parse_invoice_date(date_string):
-    date, payment_date = None, None
-
-    # PayPal csv date format: dd/mm/yyyy
-    date = datetime.datetime.strptime(date_string, "%d/%m/%Y")
-    payment_date = date + datetime.timedelta(days=options["payment_date_delay"])
-
-    return date, payment_date
 
 
 # TODO: currently doesn't work, create a working product DB object
@@ -102,77 +95,26 @@ def convert_to_html(invoice_data, invoice_template):
     return invoice_template.get_invoice_html(invoice_data)
 
 
-def get_currency_symbol(currency):
-    # USE HTML NAME CODES
-    currencies = {"EUR": "&euro;", "USD": "$", "JPY": ""}
-    return currencies[currency]
-
-
-def get_payment_details(option):
-    option = option.lower()
-    if not option in options["payment_options"].keys():
-        return ""
-    return options["payment_options"][option]
-
-
 def prepare_invoice_data():
     db = []
     file_path = config["database_path"]
-    try:
-        with codecs.open(file_path, "r", encoding="utf-8") as csv_file:
-            csv_reader = csv.reader(csv_file, delimiter=",")
-            header = next(csv_reader)
+    with codecs.open(file_path, "r", encoding="utf-8") as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=",")
 
-            for index, row in enumerate(csv_reader):
-                invoice_index = index + 1
-                date, payment_date = parse_invoice_date(row[0])
-                currency = row[1] if row[1] else options["default_currency"]
-                invoice_data = {
-                    "client": {
-                        "name": row[4],
-                        "country_code": row[5],
-                        "VAT_number": row[6],
-                        "address": row[7],
-                    },
-                    "product": {"identifier": row[2], "price": row[3], "quantity": 1},
-                    "invoice": {
-                        "index": "{:04d}".format(invoice_index),
-                        "date": date.strftime(config["date_format"]),
-                        "currency": get_currency_symbol(currency),
-                    },
-                    "mentions": {
-                        "vat": MENTION_AUTOLIQUIDATION
-                        if row[5] in EUROPE_COUNTRY_CODES
-                        else MENTION_EXONERATION
-                    },
-                    "payment": {
-                        "date": payment_date.strftime(config["date_format"]),
-                        "details": get_payment_details(row[8]),
-                    },
-                }
-                db.append(invoice_data)
-                if DEBUG and invoice_index >= options["debug"]["csv_max_parsed_rows"]:
-                    break
-    except FileNotFoundError:
-        logging.warning("File {} not found".format(file_path))
-    except OSError:
-        logging.warning("Could not open the file")
+        next(csv_reader)
+        for id, row in enumerate(csv_reader):
+            currency = row[1] if row[1] else options["default_currency"]
+
+            client = Client(name=row[4],
+                            country_code=row[5],
+                            VAT_number=row[6],
+                            address=row[7])
+            product = Product(identifier=row[2], price=row[3], quantity=1)
+            invoice = Invoice(id + 1, client, product, date_string=row[0], currency=currency)
+            db.append(invoice)
+            if DEBUG and id + 1 == options["debug"]["csv_max_parsed_rows"]:
+                break
     return db
-
-
-def parse_product_database(path):
-    products = []
-    with open(path, "r") as csv_file:
-        reader = csv.reader(csv_file)
-        header = next(reader)
-
-        product = {}
-        for row in reader:
-            product["name"] = row[0]
-            product["unit_price"] = float(row[1])
-            product["VAT_rate"] = float(row[2]) / 100
-            products.append(product)
-    return products
 
 
 def set_up_output_directory(path):
@@ -229,7 +171,6 @@ def main():
     locale.setlocale(locale.LC_ALL, "")
     # product_database = parse_product_database('./data/products_database.csv')
 
-    # TODO: turn InvoiceTemplate into an object you can pass around
     template = InvoiceTemplate(config["html_template_path"], company)
     if template.is_invalid():
         return
