@@ -2,11 +2,17 @@ import logging
 
 
 class Product:
-    def __init__(self, identifier, price, quantity=1, VAT_rate=0.0):
+    def __init__(self, identifier, price, quantity=1, tax_rate=0.0):
         self.identifier = identifier
         self.price = price
         self.quantity = quantity
-        self.VAT_rate = VAT_rate
+        self.tax_rate = tax_rate
+
+    def calculate_tax(self):
+        return self.calculate_total() * self.tax_rate
+
+    def calculate_total(self):
+        return self.price * self.quantity
 
 
 class ProductsDatabase:
