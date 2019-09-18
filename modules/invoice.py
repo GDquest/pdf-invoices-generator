@@ -2,39 +2,80 @@ import logging
 import re
 import os
 import datetime
-import options
+import codecs
+import csv
+
+from .products import Product
+from .client import Client
 
 
 class Invoice:
-    def __init__(self, index, client, products, date_string, currency, payment_option):
-        self.date, self.payment_date = self.parse_date(date_string)
+    def __init__(
+        self,
+        index,
+        client,
+        products,
+        date_string,
+        payment_delay,
+        currency,
+        payment_details="",
+    ):
+        self.date, self.payment_date = self.parse_date(date_string, payment_delay)
         self.index = index
 
         self.client = client
         self.products = products
         self.currency = self.get_currency_symbol(currency)
-        self.payment_details = self.get_payment_details(payment_option)
+        self.payment_details = payment_details
 
         self.total = sum(map(lambda p: p.calculate_total(), products))
         self.tax = sum(map(lambda p: p.calculate_tax(), products))
         self.total_tax_excl = self.total - self.tax
 
-    def parse_date(self, date_string=""):
-        # PayPal csv date format: mm/dd/yyyy
-        date = datetime.datetime.strptime(date_string, "%m/%d/%Y")
-        payment_date = date + datetime.timedelta(days=options.get("payment_date_delay"))
+    def parse_date(self, date_string, payment_delay=7):
+        date = datetime.datetime.strptime(date_string, "%d/%m/%Y")
+        payment_date = date + datetime.timedelta(days=payment_delay)
         return date, payment_date
 
     def get_currency_symbol(self, currency):
         currencies = {"EUR": "&euro;", "USD": "$", "JPY": "JPY"}
         return currencies[currency] if currency in currencies else ""
 
-    def get_payment_details(self, option):
-        key = option.lower()
-        if key not in options["payment_options"]:
-            logging.warning('Unknown payment option "{!s}"'.format(key))
-            return ""
-        return options["payment_options"][key]
+    def __repr__(self):
+        return "Invoice {:03d} from {!s}".format(self.index, self.date)
+
+
+class InvoiceList:
+    """Generates and stores a list of Invoice objects parsed from csv"""
+
+    def __init__(self, csv_file_path=""):
+        self.csv_file_path = csv_file_path
+        self.db = []
+
+    def parse_csv(self, config):
+        """Populates the db list with Invoice objects, parsed from self.csv_file_path"""
+        self.db = []
+        with codecs.open(self.csv_file_path, "r", encoding="utf-8") as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=",")
+
+            next(csv_reader)
+            for id, row in enumerate(csv_reader):
+                print(row)
+                currency = row[1] if row[1] else config["default_currency"]
+
+                client = Client(
+                    name=row[4], address=row[7], country_code=row[5], tax_number=row[6]
+                )
+                products = [Product(identifier=row[2], price=float(row[3]), quantity=1)]
+                invoice = Invoice(
+                    id + 1,
+                    client,
+                    products,
+                    row[0],
+                    config.get("payment_delay_days"),
+                    currency,
+                )
+                self.db.append(invoice)
 
 
 class InvoiceTemplate:
@@ -55,7 +96,7 @@ class InvoiceTemplate:
     def is_invalid(self):
         return not self.html or not self.company
 
-    def get_invoice_html(self, invoice_data):
+    def get_invoice_html(self, invoice):
         """
         Returns a copy of the html data with template {{ identifiers }} replaced
         """
@@ -64,7 +105,9 @@ class InvoiceTemplate:
             string_template = "{{ " + identifier + " }}"
             category, key = identifier.split("_", maxsplit=1)
             try:
-                replace_value = invoice_data[category][key]
+                replace_value = Invoice(index, client, products, date_string, currency)[
+                    category
+                ][key]
             except KeyError:
                 replace_value = identifier
                 logging.warning(
@@ -78,7 +121,7 @@ class InvoiceTemplate:
                 "total_tax",
                 "total_incl_tax",
             ]:
-                replace_value = str(replace_value) + invoice_data["invoice"]["currency"]
+                replace_value = str(replace_value) + invoice["invoice"]["currency"]
 
             html[index] = html[index].replace(string_template, str(replace_value), 1)
         return html

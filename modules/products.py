@@ -50,3 +50,23 @@ class ProductsDatabase:
                 product = Product(row[0], float(row[1]))
                 products.append(product)
         return products
+
+    # # TODO: currently doesn't work, create a working product DB object
+    # def get_product_from_id(product_id):
+    #     return {}
+
+    #     product = {}
+
+    #     if product_id.isdigit():
+    #         index = int(product_id)
+    #         product = product_database[index]
+    #     else:
+    #         for index, name in enumerate(product_names):
+    #             if product_id == name:
+    #                 product = product_database[index]
+
+    #     if not product:
+    #         logging.warning(
+    #             "Could not find product id {!s}, returning None".format(product_id)
+    #         )
+    #     return product
