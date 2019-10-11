@@ -29,12 +29,13 @@ def get_data_from_json(path):
 def set_up_output_directory(path):
     """Create output directory tree and copy the assets required to render the pdfs
     """
-    if not os.path.exists(path):
-        os.makedirs(path)
-    css_output_path = os.path.join(path, "style.css")
+    html_path = os.path.join(path, "html")
+    if not os.path.exists(html_path):
+        os.makedirs(html_path)
+    css_output_path = os.path.join(html_path, "style.css")
     if not os.path.exists(css_output_path):
         shutil.copy("template/style.css", css_output_path)
-    img_output_path = os.path.join(path, "img")
+    img_output_path = os.path.join(html_path, "img")
     if not os.path.exists(img_output_path):
         shutil.copytree("template/img", img_output_path)
 
@@ -54,7 +55,9 @@ def render_pdfs(output_directory):
         html_filepath = os.path.join(html_directory, filename)
         name = os.path.splitext(filename)[0]
         filepath = os.path.join(output_directory, name)
-        subprocess.run("wkhtmltopdf {} {}.pdf".format(html_filepath, filepath))
+        html_abspath = os.path.abspath(html_filepath)
+        file_abspath = os.path.abspath(filepath)
+        subprocess.run("wkhtmltopdf {} {}.pdf".format(html_abspath, file_abspath))
 
 
 def main():
@@ -83,7 +86,7 @@ def main():
     output_directory = os.path.join(config.get("output_path"), db_file_name)
     set_up_output_directory(output_directory)
     save_html_files(output_directory, htmls, filenames)
-    # render_pdfs(output_directory)
+    render_pdfs(output_directory)
 
 
 if __name__ == "__main__":

@@ -119,7 +119,7 @@ class InvoiceTemplate:
             "client_name": client.name,
             "client_address": client.address,
             "client_VAT_number": client.tax_number,
-            "invoice_index": invoice.index,
+            "invoice_index": "{:03d}".format(invoice.index),
             "invoice_date": invoice.date,
             "product_name": product.identifier,
             "product_quantity": product.quantity,
