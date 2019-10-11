@@ -7,6 +7,7 @@ import csv
 
 from .products import Product
 from .client import Client
+from .config import Config
 
 
 class Invoice:
@@ -37,9 +38,13 @@ class Invoice:
         payment_date = date + datetime.timedelta(days=payment_delay)
         return date, payment_date
 
-    def get_currency_symbol(self, currency):
+    def get_currency_symbol(self, currency: str) -> str:
         currencies = {"EUR": "&euro;", "USD": "$", "JPY": "JPY"}
         return currencies[currency] if currency in currencies else ""
+
+    def get_filename(self) -> str:
+        """Returns a filename as a string without the extension"""
+        return "{}-{:03d}-{}".format(self.date, self.index, self.client.name)
 
     def __repr__(self):
         return "Invoice {:03d} from {!s}".format(self.index, self.date)
@@ -60,7 +65,6 @@ class InvoiceList:
 
             next(csv_reader)
             for id, row in enumerate(csv_reader):
-                print(row)
                 currency = row[1] if row[1] else config["default_currency"]
 
                 client = Client(
@@ -96,34 +100,40 @@ class InvoiceTemplate:
     def is_invalid(self):
         return not self.html or not self.company
 
-    def get_invoice_html(self, invoice):
+    def get_invoices_as_html(self, invoice: Invoice, config: Config):
         """
         Returns a copy of the html data with template {{ identifiers }} replaced
         """
         html = list(self.html)
+        client: Client = invoice.client
+        # TODO: add support for multiple products
+        product: Product = invoice.products[0]
+        total_tax_excluded = product.calculate_total() - product.calculate_tax()
+        data = {
+            "client_name": client.name,
+            "client_address": client.address,
+            "client_VAT_number": client.tax_number,
+            "invoice_index": invoice.index,
+            "invoice_date": invoice.date,
+            "product_name": product.identifier,
+            "product_quantity": product.quantity,
+            "product_unit_price": product.price,
+            "product_VAT_rate": product.tax_rate,
+            "product_total_tax_excl": total_tax_excluded,
+            # TODO: add discount support
+            "total_discount": 0,
+            "total_excl_tax": total_tax_excluded,
+            "total_tax": product.calculate_tax(),
+            "total_incl_tax": product.calculate_total(),
+            "mentions_vat": config.get("mention_fr_autoliquidation")
+            if product.calculate_tax() == 0.0
+            else "",
+            "payment_date": invoice.payment_date,
+            "payment_details": invoice.payment_details,
+        }
         for index, identifier in self.regex_matches:
             string_template = "{{ " + identifier + " }}"
-            category, key = identifier.split("_", maxsplit=1)
-            try:
-                replace_value = Invoice(index, client, products, date_string, currency)[
-                    category
-                ][key]
-            except KeyError:
-                replace_value = identifier
-                logging.warning(
-                    "Could not find matching value for {!s}".format(identifier)
-                )
-            if identifier in [
-                "product_unit_price",
-                "product_total_tax_excl",
-                "total_discount",
-                "total_excl_tax",
-                "total_tax",
-                "total_incl_tax",
-            ]:
-                replace_value = str(replace_value) + invoice["invoice"]["currency"]
-
-            html[index] = html[index].replace(string_template, str(replace_value), 1)
+            html[index] = html[index].replace(string_template, str(data[identifier]), 1)
         return html
 
     def _parse(self, html_doc):
