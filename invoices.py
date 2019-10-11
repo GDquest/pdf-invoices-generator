@@ -39,25 +39,22 @@ def set_up_output_directory(path):
         shutil.copytree("template/img", img_output_path)
 
 
-def save_html_files(html_output_directory, htmls, filenames):
+def save_html_files(output_directory, htmls, filenames):
+    """Saves each html stream from the htmls list as a file"""
+    html_directory = os.path.join(output_directory, "html")
     for html, filename in zip(htmls, filenames):
-        export_path = os.path.join(html_output_directory, filename + ".html")
+        export_path = os.path.join(html_directory, filename + ".html")
         with codecs.open(export_path, "w", encoding="utf-8") as invoice_file:
             invoice_file.writelines(html)
 
 
-def render_pdfs(html_output_directory, pdf_output_directory):
-    if not os.path.exists(pdf_output_directory):
-        os.makedirs(pdf_output_directory)
-
-    for filename in os.listdir(html_output_directory):
+def render_pdfs(output_directory):
+    html_directory = os.path.join(output_directory, "html")
+    for filename in os.listdir(html_directory):
+        html_filepath = os.path.join(html_directory, filename)
         name = os.path.splitext(filename)[0]
-        html_filepath = os.path.join(html_output_directory, filename)
-        subprocess.run(
-            "wkhtmltopdf {} {}.pdf".format(
-                html_filepath, os.path.join(pdf_output_directory, name)
-            )
-        )
+        filepath = os.path.join(output_directory, name)
+        subprocess.run("wkhtmltopdf {} {}.pdf".format(html_filepath, filepath))
 
 
 def main():
@@ -75,20 +72,18 @@ def main():
 
     invoice_list = InvoiceList(config.get("database_path"))
     invoice_list.parse_csv(config)
-    htmls = map(template.get_invoices_as_html, invoice_list.db, itertools.repeat(config))
+    htmls = map(
+        template.get_invoices_as_html, invoice_list.db, itertools.repeat(config)
+    )
     filenames = (invoice.get_filename() for invoice in invoice_list.db)
 
     db_file_path = config.get("database_path")
-    assert(os.path.isfile(db_file_path))
+    assert os.path.isfile(db_file_path)
     db_file_name = os.path.splitext(os.path.basename(db_file_path))[0]
     output_directory = os.path.join(config.get("output_path"), db_file_name)
-
-    html_output_directory = os.path.join(output_directory, "html")
-    set_up_output_directory(html_output_directory)
-    save_html_files(html_output_directory, htmls, filenames)
-    return
-
-    render_pdfs(html_output_directory, output_directory)
+    set_up_output_directory(output_directory)
+    save_html_files(output_directory, htmls, filenames)
+    # render_pdfs(output_directory)
 
 
 if __name__ == "__main__":

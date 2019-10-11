@@ -34,9 +34,11 @@ class Invoice:
         self.total_tax_excl = self.total - self.tax
 
     def parse_date(self, date_string, payment_delay=7):
+        """Returns the invoice date and payment dates as strings using the YYYY-mm-dd format"""
         date = datetime.datetime.strptime(date_string, "%d/%m/%Y")
         payment_date = date + datetime.timedelta(days=payment_delay)
-        return date, payment_date
+        format = "%Y-%m-%d"
+        return date.strftime(format), payment_date.strftime(format)
 
     def get_currency_symbol(self, currency: str) -> str:
         currencies = {"EUR": "&euro;", "USD": "$", "JPY": "JPY"}
@@ -44,7 +46,11 @@ class Invoice:
 
     def get_filename(self) -> str:
         """Returns a filename as a string without the extension"""
-        return "{}-{:03d}-{}".format(self.date, self.index, self.client.name)
+        return (
+            "{}-{:03d}-{}".format(self.date, self.index, self.client.name)
+            .lower()
+            .replace(" ", "-")
+        )
 
     def __repr__(self):
         return "Invoice {:03d} from {!s}".format(self.index, self.date)
