@@ -122,14 +122,14 @@ class InvoiceTemplate:
             "invoice_date": invoice.date,
             "product_name": product.identifier,
             "product_quantity": product.quantity,
-            "product_unit_price": product.price,
+            "product_unit_price": str(product.price) + invoice.currency,
             "product_VAT_rate": product.tax_rate,
-            "product_total_tax_excl": total_tax_excluded,
+            "product_total_tax_excl": str(total_tax_excluded) + invoice.currency,
             # TODO: add discount support
             "total_discount": 0,
-            "total_excl_tax": total_tax_excluded,
-            "total_tax": product.calculate_tax(),
-            "total_incl_tax": product.calculate_total(),
+            "total_excl_tax": str(total_tax_excluded) + invoice.currency,
+            "total_tax": str(product.calculate_tax()) + invoice.currency,
+            "total_incl_tax": str(product.calculate_total()) + invoice.currency,
             "mentions_vat": config.get("mention_fr_autoliquidation")
             if product.calculate_tax() == 0.0
             else "",
