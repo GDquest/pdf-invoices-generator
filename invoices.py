@@ -1,21 +1,14 @@
 # -*- coding: utf-8 -*-
-import json
-import subprocess
-import os
-import shutil
-import csv
-import re
-import logging
-import locale
-import datetime
 import codecs
 import itertools
+import json
+import locale
+import os
+import shutil
+import subprocess
 
-from modules.invoice import Invoice, InvoiceTemplate, InvoiceList
-from modules.client import Client
-from modules.products import Product
 from modules.config import Config
-
+from modules.invoice import InvoiceList, InvoiceTemplate
 
 DEBUG = True
 

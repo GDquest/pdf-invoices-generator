@@ -1,13 +1,12 @@
-import logging
-import re
-import os
-import datetime
 import codecs
 import csv
+import datetime
+import os
+import re
 
-from .products import Product
 from .client import Client
 from .config import Config
+from .products import Product
 
 
 class Invoice:
