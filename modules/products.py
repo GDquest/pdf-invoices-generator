@@ -8,11 +8,20 @@ class Product:
         self.quantity = quantity
         self.tax_rate = tax_rate
 
-    def calculate_tax(self):
-        return self.calculate_total() * self.tax_rate
+        self.tax = self._calculate_tax()
+        self.price_without_tax = self.price - self.tax
 
-    def calculate_total(self):
+    def _calculate_tax(self) -> float:
+        return round(self.price - (self.price / (1.0 + self.tax_rate)), 2)
+
+    def calculate_total_without_tax(self) -> float:
+        return self.calculate_total() - self.tax * self.quantity
+
+    def calculate_total(self) -> float:
         return self.price * self.quantity
+
+    def get_tax_rate_as_string(self) -> str:
+        return "{}%".format(round(self.tax_rate * 100, 0))
 
 
 class ProductsDatabase:

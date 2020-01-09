@@ -8,6 +8,40 @@ from .client import Client
 from .config import Config
 from .products import Product
 
+# Countries where VAT applies
+EU_COUNTRY_CODES = [
+    "AT",
+    "BE",
+    "BG",
+    "CY",
+    "CZ",
+    "DE",
+    "DK",
+    "EE",
+    "EL",
+    "ES",
+    "FI",
+    "FR",
+    "HR",
+    "HU",
+    "IE",
+    "IT",
+    "LT",
+    "LU",
+    "LV",
+    "MT",
+    "NL",
+    "PL",
+    "PT",
+    "RO",
+    "SE",
+    "SI",
+    "SK",
+    "UK",
+]
+VAT_RATE_SERVICE_FR = 0.2
+ROUND_DECIMALS = 2
+
 
 class Invoice:
     def __init__(
@@ -28,9 +62,11 @@ class Invoice:
         self.currency = self.get_currency_symbol(currency)
         self.payment_details = payment_details
 
-        self.total = sum(map(lambda p: p.calculate_total(), products))
-        self.tax = sum(map(lambda p: p.calculate_tax(), products))
-        self.total_tax_excl = self.total - self.tax
+        self.total = round(
+            sum(map(lambda p: p.calculate_total(), products)), ROUND_DECIMALS
+        )
+        self.tax = round(sum(map(lambda p: p.tax, products)), ROUND_DECIMALS)
+        self.total_tax_excl = round(self.total - self.tax, ROUND_DECIMALS)
 
     def parse_date(self, date_string, payment_delay=7):
         """Returns the invoice date and payment dates as strings using the YYYY-mm-dd format"""
@@ -62,25 +98,37 @@ class InvoiceList:
         self.csv_file_path = csv_file_path
         self.db = []
 
+    # TODO: Check keys
     def parse_csv(self, config):
         """Populates the db list with Invoice objects, parsed from self.csv_file_path"""
         self.db = []
         with codecs.open(self.csv_file_path, "r", encoding="utf-8") as csv_file:
-            csv_reader = csv.reader(csv_file, delimiter=",")
-
-            next(csv_reader)
+            csv_reader = csv.DictReader(csv_file, delimiter=",")
             for id, row in enumerate(csv_reader):
-                currency = row[1] if row[1] else config["default_currency"]
-
-                client = Client(
-                    name=row[4], address=row[7], country_code=row[5], tax_number=row[6]
+                currency = (
+                    row["currency"] if row["currency"] else config["default_currency"]
                 )
-                products = [Product(identifier=row[2], price=float(row[3]), quantity=1)]
+                client = Client(
+                    name=row["client_name"],
+                    address=row["client_address"],
+                    country_code=row["client_country_code"],
+                    vat_number=row["client_vat_number"],
+                )
+                products = [
+                    Product(
+                        identifier=row["product_id"],
+                        price=float(row["price"]),
+                        quantity=1,
+                        tax_rate=VAT_RATE_SERVICE_FR
+                        if client.country_code in EU_COUNTRY_CODES
+                        else 0.0,
+                    )
+                ]
                 invoice = Invoice(
                     id + 1,
                     client,
                     products,
-                    row[0],
+                    row["date"],
                     config.get("payment_delay_days"),
                     currency,
                 )
@@ -113,25 +161,27 @@ class InvoiceTemplate:
         client: Client = invoice.client
         # TODO: add support for multiple products
         product: Product = invoice.products[0]
-        total_tax_excluded = product.calculate_total() - product.calculate_tax()
         data = {
             "client_name": client.name,
             "client_address": client.address,
-            "client_VAT_number": client.tax_number,
+            "client_VAT_number": client.vat_number,
             "invoice_index": "{:03d}".format(invoice.index),
             "invoice_date": invoice.date,
+            # TODO: Replace with a function or object that gives you this dict from a product
             "product_name": product.identifier,
             "product_quantity": product.quantity,
-            "product_unit_price": str(product.price) + invoice.currency,
-            "product_VAT_rate": product.tax_rate,
-            "product_total_tax_excl": str(total_tax_excluded) + invoice.currency,
+            "product_unit_price": str(product.price_without_tax) + invoice.currency,
+            "product_VAT_rate": product.get_tax_rate_as_string(),
+            "product_total_tax_excl": str(product.price_without_tax * product.quantity)
+            + invoice.currency,
             # TODO: add discount support
             "total_discount": 0,
-            "total_excl_tax": str(total_tax_excluded) + invoice.currency,
-            "total_tax": str(product.calculate_tax()) + invoice.currency,
+            "total_excl_tax": str(product.calculate_total_without_tax())
+            + invoice.currency,
+            "total_tax": str(product.tax * product.quantity) + invoice.currency,
             "total_incl_tax": str(product.calculate_total()) + invoice.currency,
             "mentions_vat": config.get("mention_fr_autoliquidation")
-            if product.calculate_tax() == 0.0
+            if product.tax_rate == 0.0
             else "",
             "payment_date": invoice.payment_date,
             "payment_details": invoice.payment_details,
