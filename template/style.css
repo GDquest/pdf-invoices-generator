@@ -5,32 +5,47 @@ html {
     color: #444;
 }
 
+@page {
+    size: A4;
+    margin: 1cm;
+    font-size: 10px;
+}
+
 body {
     display: flex;
     flex-direction: column;
     margin: auto;
-    padding: 2rem;
-    max-width: 940px;
+    padding: 0;
 }
 
-
-footer {
+header {
+    display: block;
+    margin-bottom: 4rem;
 }
 
-h1, p {
+.addresses {
+    display: flex;
+    justify-content: space-between;
+    flex-direction: row;
+}
+
+h1 {
+    text-align: center;
+}
+
+h1,
+p {
     margin: 0 0 1em 0;
 }
 
-h1, h2, h3 {
-    font-family: "Montserrat", Calibri, sans-serif;
-}
-
-th {
+h1,
+h2,
+h3 {
     font-family: "Montserrat", Calibri, sans-serif;
 }
 
 .clearfix {
-    clear:both;
+    clear: both;
 }
 
 .logo {
@@ -38,33 +53,40 @@ th {
     max-height: 1.5cm;
 }
 
-.logo > img {
+.logo>img {
     max-width: inherit;
     max-height: inherit;
 }
 
-/* LAYOUT */
-#company {
-    float: left;
-    width: 6cm;
+table {
+    border-collapse: collapse;
 }
 
-#client {
-    float: right;
-    width: 5cm;
+table thead {
+    height: 60px;
+    color: white;
+    background: #09387a;
+}
+
+th {
+    font-family: "Montserrat", Calibri, sans-serif;
 }
 
 td {
     vertical-align: top;
 }
 
-td, th {
-    padding: 10px;
+td,
+th {
+    padding: 0.2cm;
 }
 
-header {
-    display: block;
-    margin-bottom: 4rem;
+tr:nth-child(even) {
+    background: #f1f5fb;
+}
+
+.align-right {
+    text-align: right;
 }
 
 footer {
