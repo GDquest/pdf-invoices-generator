@@ -5,10 +5,10 @@ import json
 import locale
 import os
 import shutil
-import subprocess
 
 from modules.config import Config
 from modules.invoice import InvoiceList, InvoiceTemplate
+from modules.render import render
 
 DEBUG = True
 
@@ -33,24 +33,13 @@ def set_up_output_directory(path):
         shutil.copytree("template/img", img_output_path)
 
 
-def save_html_files(output_directory, htmls, filenames):
+def save_html_files(dir_out, htmls, filenames):
     """Saves each html stream from the htmls list as a file"""
-    html_directory = os.path.join(output_directory, "html")
+    html_directory = os.path.join(dir_out, "html")
     for html, filename in zip(htmls, filenames):
         export_path = os.path.join(html_directory, filename + ".html")
         with codecs.open(export_path, "w", encoding="utf-8") as invoice_file:
             invoice_file.writelines(html)
-
-
-def render_pdfs(output_directory):
-    html_directory = os.path.join(output_directory, "html")
-    for filename in os.listdir(html_directory):
-        html_filepath = os.path.join(html_directory, filename)
-        name = os.path.splitext(filename)[0]
-        filepath = os.path.join(output_directory, name)
-        html_abspath = os.path.abspath(html_filepath)
-        file_abspath = os.path.abspath(filepath)
-        subprocess.run("wkhtmltopdf {} {}.pdf".format(html_abspath, file_abspath))
 
 
 def main():
@@ -76,10 +65,10 @@ def main():
     db_file_path = config.get("database_path")
     assert os.path.isfile(db_file_path)
     db_file_name = os.path.splitext(os.path.basename(db_file_path))[0]
-    output_directory = os.path.join(config.get("output_path"), db_file_name)
-    set_up_output_directory(output_directory)
-    save_html_files(output_directory, htmls, filenames)
-    render_pdfs(output_directory)
+    dir_out = os.path.join(config.get("output_path"), db_file_name)
+    set_up_output_directory(dir_out)
+    save_html_files(dir_out, htmls, filenames)
+    render(dir_out, as_png=False)
 
 
 if __name__ == "__main__":
