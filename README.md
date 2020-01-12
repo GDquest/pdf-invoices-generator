@@ -17,7 +17,7 @@ Contributors are welcome! See the [open issues](https://github.com/NathanLovato/
 
 The tool takes a template HTML files and css, and fill them up with information from your configuration, company, and invoices file.
 
-![screenshot of a generated invoice](//i.imgur.com/767Xdjp.png)
+![screenshot of a generated invoice](https://i.imgur.com/767Xdjp.png)
 
 ## Installing dependencies for development and testing ##
 
