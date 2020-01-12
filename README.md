@@ -1,15 +1,38 @@
-# Invoices, a simple invoice generator
+# Invoices-cli: create invoices from the command-line
 
-Invoices generates clean and lightweight invoices fast, in batches, right on your computer.
+Invoices generates clean and lightweight invoices fast, in batches, right on your computer, from the command line.
 
-While I could do all this with external apps, I've chosen to pick tools that give me full control of my data and to do everything right in my text editor when it comes to accounting. I only needed one external tool to manage invoices and generate them, e.g. following a crowdfunding campaign. This is **Invoices**.
+There are plenty of complete applications with modern user interfaces to create invoices one-by-one. But I couldn't find an open source tool to:
 
-![Invoice template example](./img/template-demo.png)
+1. Generate invoices in large batches.
+2. Create invoices in a simple way, from a CSV file or the command-line.
 
-## The tool
+That's what invoices-cli is. It is a simple yet efficient Python program that is meant to play nice with your shell.
 
-Invoices generates one HTML and one PDF invoice for each entry in a CSV file.
+⚠ Invoices-cli is currently in development. Although it works, it doesn't have a command line interface yet.
 
-## Export format
+Contributors are welcome! See the [open issues](https://github.com/NathanLovato/pdf-invoices-generator/issues)
 
-Invoices exports files to dist/{csv-file-name}/YYYY-MM-DD-0001-client-name.pdf
+## How it works ##
+
+The tool takes a template HTML files and css, and fill them up with information from your configuration, company, and invoices file.
+
+![screenshot of a generated invoice](//i.imgur.com/767Xdjp.png)
+
+## Installing dependencies for development and testing ##
+
+The tool relies on [weasyprint](https://weasyprint.readthedocs.io/en/stable/), a library to render web pages to PDF and PNG. The project uses pipenv to manage dependencies and easily install everything.
+
+If you don't have pipenv, install it with:
+
+```bash
+pip install pipenv
+```
+
+Then, in the invoices project directory, call:
+
+```
+pipenv install
+```
+
+
