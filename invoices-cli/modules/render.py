@@ -13,6 +13,9 @@ def render(dir_out: str, as_png: bool = False):
 
     import weasyprint
 
+    weasyprint.CSS(string="@page { size: A4; margin: 1cm }")
+    # import logging
+    # logger = logging.getLogger('weasyprint')
     for path_html, path_out in paths:
         html = weasyprint.HTML(filename=path_html)
         if as_png:

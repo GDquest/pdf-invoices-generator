@@ -6,11 +6,12 @@ import locale
 import os
 import shutil
 
-from modules.config import Config
-from modules.invoice import InvoiceList, InvoiceTemplate
-from modules.render import render
+from .modules.config import Config
+from .modules.invoice import InvoiceList, InvoiceTemplate
+from .modules.render import render
 
 DEBUG = True
+this_file_path = os.path.dirname(__file__)
 
 
 def get_data_from_json(path):
@@ -26,11 +27,12 @@ def set_up_output_directory(path):
     if not os.path.exists(html_path):
         os.makedirs(html_path)
     css_output_path = os.path.join(html_path, "style.css")
-    if not os.path.exists(css_output_path):
-        shutil.copy("template/style.css", css_output_path)
+    css_file_path = os.path.join(this_file_path, "template/style.css")
+    shutil.copy(css_file_path, css_output_path)
     img_output_path = os.path.join(html_path, "img")
     if not os.path.exists(img_output_path):
-        shutil.copytree("template/img", img_output_path)
+        img_file_path = os.path.join(this_file_path, "template/img")
+        shutil.copytree(img_file_path, img_output_path)
 
 
 def save_html_files(dir_out, htmls, filenames):
@@ -44,11 +46,17 @@ def save_html_files(dir_out, htmls, filenames):
 
 def main():
     locale.setlocale(locale.LC_ALL, "")
-    config = Config("./data/config.json")
-    company = get_data_from_json("./data/company.json")
+
+
+    config_path = os.path.join(this_file_path, "./data/config.json")
+    config = Config(config_path)
+    json_path = os.path.join(this_file_path,"./data/company.json")
+    company = get_data_from_json(json_path)
+    print(company)
 
     config.set("payment_paypal", "PayPal address: " + company["paypal"])
-    with codecs.open("template/bank-details.html", "r", encoding="utf-8") as html_doc:
+    bank_details_path = os.path.join(this_file_path, "template/bank-details.html")
+    with codecs.open(bank_details_path, "r", encoding="utf-8") as html_doc:
         config.set("payment_wire", html_doc.read())
 
     template = InvoiceTemplate(config.get("html_template_path"), company)

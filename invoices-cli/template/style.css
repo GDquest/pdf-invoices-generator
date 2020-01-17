@@ -65,7 +65,7 @@ table {
 table thead {
     height: 60px;
     color: white;
-    background: #09387a;
+    background: #5387be;
 }
 
 th {
@@ -82,7 +82,7 @@ th {
 }
 
 tr:nth-child(even) {
-    background: #f1f5fb;
+    background: #f1f8fb;
 }
 
 .align-right {

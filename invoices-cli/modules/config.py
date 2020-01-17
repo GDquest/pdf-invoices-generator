@@ -5,6 +5,7 @@ class Config:
     """
     Loads, updates, and saves the program's settings
     """
+
     def __init__(self, path):
         self.path = path
         self.settings = self.load(path)
@@ -25,5 +26,5 @@ class Config:
         self.settings[key] = value
 
     def save(self):
-        with open(self.path, 'w') as output_file:
+        with open(self.path, "w") as output_file:
             json.dump(self.settings, output_file)
