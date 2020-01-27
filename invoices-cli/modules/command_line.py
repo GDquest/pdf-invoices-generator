@@ -8,9 +8,8 @@ def parse_and_get_arguments(config: Config) -> Namespace:
     parser: ArgumentParser = ArgumentParser(
         prog="invoices", description="Creates PDF invoices from CSV tables"
     )
-    parser.add_argument("path")
     parser.add_argument(
-        "-p", "--path", default=config.get("database_path"),
+        "-p", "--path", default=config.get("database_path"), help="Path to the invoices database to render."
     )
 
     subparsers = parser.add_subparsers(dest="command", required=True)

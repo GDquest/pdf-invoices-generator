@@ -6,9 +6,10 @@ import locale
 import os
 import shutil
 
-from .modules.config import Config
-from .modules.invoice import InvoiceList, InvoiceTemplate
-from .modules.render import render
+from modules.command_line import parse_and_get_arguments
+from modules.config import Config
+from modules.invoice import InvoiceList, InvoiceTemplate
+from modules.render import render
 
 DEBUG = True
 this_file_path = os.path.dirname(__file__)
@@ -47,36 +48,40 @@ def save_html_files(dir_out, htmls, filenames):
 def main():
     locale.setlocale(locale.LC_ALL, "")
 
-
     config_path = os.path.join(this_file_path, "./data/config.json")
     config = Config(config_path)
-    json_path = os.path.join(this_file_path,"./data/company.json")
+    json_path = os.path.join(this_file_path, "./data/company.json")
     company = get_data_from_json(json_path)
-    print(company)
 
     config.set("payment_paypal", "PayPal address: " + company["paypal"])
     bank_details_path = os.path.join(this_file_path, "template/bank-details.html")
     with codecs.open(bank_details_path, "r", encoding="utf-8") as html_doc:
         config.set("payment_wire", html_doc.read())
 
-    template = InvoiceTemplate(config.get("html_template_path"), company)
+    template = InvoiceTemplate(
+        os.path.join(this_file_path, "template/invoice.html"), company
+    )
     if template.is_invalid():
         return
 
-    invoice_list = InvoiceList(config.get("database_path"))
+    args = parse_and_get_arguments(config)
+    db_file_path = args.path
+    assert os.path.isfile(db_file_path)
+    db_file_name = os.path.splitext(os.path.basename(db_file_path))[0]
+    dir_out = os.path.join(config.get("output_path"), db_file_name)
+
+    invoice_list = InvoiceList(db_file_path)
     invoice_list.parse_csv(config)
     htmls = map(
         template.get_invoices_as_html, invoice_list.db, itertools.repeat(config)
     )
     filenames = (invoice.get_filename() for invoice in invoice_list.db)
 
-    db_file_path = config.get("database_path")
-    assert os.path.isfile(db_file_path)
-    db_file_name = os.path.splitext(os.path.basename(db_file_path))[0]
-    dir_out = os.path.join(config.get("output_path"), db_file_name)
     set_up_output_directory(dir_out)
-    save_html_files(dir_out, htmls, filenames)
-    render(dir_out, as_png=False)
+    if args.command == "generate":
+        save_html_files(dir_out, htmls, filenames)
+    if args.command == "render":
+        render(dir_out, as_png=False)
 
 
 if __name__ == "__main__":
