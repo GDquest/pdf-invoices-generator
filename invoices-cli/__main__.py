@@ -12,7 +12,7 @@ from .modules.invoice import InvoiceList, InvoiceTemplate
 from .modules.render import render
 
 DEBUG = True
-this_file_path = os.path.dirname(__file__)
+THIS_FILE_PATH = os.path.dirname(__file__)
 
 
 def get_data_from_json(path):
@@ -28,11 +28,11 @@ def set_up_output_directory(path):
     if not os.path.exists(html_path):
         os.makedirs(html_path)
     css_output_path = os.path.join(html_path, "style.css")
-    css_file_path = os.path.join(this_file_path, "template/style.css")
+    css_file_path = os.path.join(THIS_FILE_PATH, "template/style.css")
     shutil.copy(css_file_path, css_output_path)
     img_output_path = os.path.join(html_path, "img")
     if not os.path.exists(img_output_path):
-        img_file_path = os.path.join(this_file_path, "template/img")
+        img_file_path = os.path.join(THIS_FILE_PATH, "template/img")
         shutil.copytree(img_file_path, img_output_path)
 
 
@@ -48,18 +48,18 @@ def save_html_files(dir_out, htmls, filenames):
 def main():
     locale.setlocale(locale.LC_ALL, "")
 
-    config_path = os.path.join(this_file_path, "./data/config.json")
+    config_path = os.path.join(THIS_FILE_PATH, "./data/config.json")
     config = Config(config_path)
-    json_path = os.path.join(this_file_path, "./data/company.json")
+    json_path = os.path.join(THIS_FILE_PATH, "./data/company.json")
     company = get_data_from_json(json_path)
 
     config.set("payment_paypal", "PayPal address: " + company["paypal"])
-    bank_details_path = os.path.join(this_file_path, "template/bank-details.html")
+    bank_details_path = os.path.join(THIS_FILE_PATH, "template/bank-details.html")
     with codecs.open(bank_details_path, "r", encoding="utf-8") as html_doc:
         config.set("payment_wire", html_doc.read())
 
     template = InvoiceTemplate(
-        os.path.join(this_file_path, "template/invoice.html"), company
+        os.path.join(THIS_FILE_PATH, "template/invoice.html"), company
     )
     if template.is_invalid():
         return
