@@ -6,10 +6,10 @@ import locale
 import os
 import shutil
 
-from modules.command_line import parse_and_get_arguments
-from modules.config import Config
-from modules.invoice import InvoiceList, InvoiceTemplate
-from modules.render import render
+from .modules.command_line import parse_and_get_arguments
+from .modules.config import Config
+from .modules.invoice import InvoiceList, InvoiceTemplate
+from .modules.render import render
 
 DEBUG = True
 this_file_path = os.path.dirname(__file__)
