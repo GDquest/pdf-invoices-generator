@@ -82,7 +82,7 @@ class Invoice:
     def get_filename(self) -> str:
         """Returns a filename as a string without the extension"""
         return (
-            "{}-{:03d}-{}".format(self.date, self.index, self.client.name)
+            "{}-{:03d}-{}".format(self.date, self.index, self.client.name.replace('/', "-"))
             .lower()
             .replace(" ", "-")
         )
