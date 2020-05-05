@@ -31,7 +31,7 @@ class ClientList(dict):
             for id, row in enumerate(csv_reader):
                 self[row["name"]] = Client(
                     name=row["name"],
-                    address=row["address"],
+                    address=row["address"].replace("\n", "</br>"),
                     country_code=row["country_code"],
                     vat_number=row["vat_number"],
                 )

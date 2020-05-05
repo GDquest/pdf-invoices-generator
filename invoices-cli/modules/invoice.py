@@ -98,7 +98,6 @@ class InvoiceList:
         self.csv_file_path = csv_file_path
         self.db = []
 
-    # TODO: Check keys
     def parse_csv(self, config):
         """Populates the db list with Invoice objects, parsed from self.csv_file_path"""
         self.db = []
@@ -163,11 +162,10 @@ class InvoiceTemplate:
         product: Product = invoice.products[0]
         data = {
             "client_name": client.name,
-            "client_address": client.address,
+            "client_address": client.address.replace("\n", "</br>"),
             "client_VAT_number": client.vat_number,
             "invoice_index": "{:03d}".format(invoice.index),
             "invoice_date": invoice.date,
-            # TODO: Replace with a function or object that gives you this dict from a product
             "product_name": product.identifier,
             "product_quantity": product.quantity,
             "product_unit_price": str(product.price_without_tax) + invoice.currency,
