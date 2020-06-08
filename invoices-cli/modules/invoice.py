@@ -82,7 +82,9 @@ class Invoice:
     def get_filename(self) -> str:
         """Returns a filename as a string without the extension"""
         return (
-            "{}-{:03d}-{}".format(self.date, self.index, self.client.name.replace('/', "-"))
+            "{}-{:03d}-{}".format(
+                self.date, self.index, self.client.name.replace("/", "-")
+            )
             .lower()
             .replace(" ", "-")
         )
@@ -111,7 +113,7 @@ class InvoiceList:
                     name=row["client_name"],
                     address=row["client_address"],
                     country_code=row["client_country_code"],
-                    vat_number=row["client_vat_number"],
+                    vat_number=row["client_vat_number"].strip(),
                 )
                 products = [
                     Product(
@@ -120,6 +122,7 @@ class InvoiceList:
                         quantity=1,
                         tax_rate=VAT_RATE_SERVICE_FR
                         if client.country_code in EU_COUNTRY_CODES
+                        and not client.vat_number
                         else 0.0,
                     )
                 ]
