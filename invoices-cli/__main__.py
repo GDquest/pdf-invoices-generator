@@ -2,7 +2,6 @@
 import codecs
 import itertools
 import json
-import locale
 import os
 from os.path import join, exists, dirname, isfile, splitext, basename
 import shutil
@@ -65,8 +64,6 @@ def get_config():
 
 
 def main():
-    locale.setlocale(locale.LC_ALL, "")
-
     config = get_config()
 
     template_path = join(THIS_FILE_PATH, "template/invoice.html")
