@@ -87,7 +87,7 @@ def main():
     if args.command == "generate":
         save_html_files(dir_out, htmls, filenames)
     if args.command == "render":
-        render(dir_out, as_png=False)
+        render(args, dir_out, as_png=False)
 
 
 if __name__ == "__main__":

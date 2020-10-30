@@ -2,6 +2,26 @@
 """
 from argparse import ArgumentParser, Namespace
 from .config import Config
+import datetime
+import sys
+
+
+def _set_date(args) -> datetime.date:
+    """Validates the date argument, parsing the date from the ISO format"""
+    date: datetime.date
+    try:
+        date = datetime.date.fromisoformat(args)
+    except ValueError:
+        date = datetime.date.today()
+    return date
+
+
+def _are_dates_valid(date_start, date_end) -> bool:
+    today = datetime.date.today()
+    valid = True
+    if date_start > today or date_end > today or date_start > date_end:
+        valid = False
+    return valid
 
 
 def parse_and_get_arguments(config: Config) -> Namespace:
@@ -51,5 +71,24 @@ def parse_and_get_arguments(config: Config) -> Namespace:
         help="Render the invoices as PNG files."
         "Requires the program wkhtmltopdf to render the files.",
     )
+    parser_render.add_argument(
+        "-s",
+        "--start-date",
+        type=_set_date,
+        default=datetime.date(1900, 1, 1),
+        help="Only render invoices after that date. The date format should be yyyy-mm-dd, for instance, 2020-10-05 for October 5, 2020.",
+    )
+    parser_render.add_argument(
+        "-e",
+        "--end-date",
+        type=_set_date,
+        default=datetime.date.today(),
+        help="Only render invoices before that date.",
+    )
 
-    return parser.parse_args()
+    args = parser.parse_args()
+
+    if hasattr(args, "start_date") and not _are_dates_valid(args.start_date, args.end_date):
+        print("The start and end dates are invalid. Aborting.")
+        sys.exit()
+    return args
