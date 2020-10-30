@@ -162,6 +162,7 @@ class InvoiceTemplate:
         html = list(self.html)
         client: Client = invoice.client
         # TODO: add support for multiple products
+        # TODO: automate rounding of numbers to ROUND_DECIMALS for output
         product: Product = invoice.products[0]
         data = {
             "client_name": client.name,
@@ -171,13 +172,16 @@ class InvoiceTemplate:
             "invoice_date": invoice.date,
             "product_name": product.identifier,
             "product_quantity": product.quantity,
-            "product_unit_price": str(product.price_without_tax) + invoice.currency,
+            "product_unit_price": str(round(product.price_without_tax, ROUND_DECIMALS))
+            + invoice.currency,
             "product_VAT_rate": product.get_tax_rate_as_string(),
-            "product_total_tax_excl": str(product.price_without_tax * product.quantity)
+            "product_total_tax_excl": str(
+                round(product.price_without_tax * product.quantity, ROUND_DECIMALS)
+            )
             + invoice.currency,
             # TODO: add discount support
             "total_discount": 0,
-            "total_excl_tax": str(product.calculate_total_without_tax())
+            "total_excl_tax": str(round(product.calculate_total_without_tax(), ROUND_DECIMALS))
             + invoice.currency,
             "total_tax": str(product.tax * product.quantity) + invoice.currency,
             "total_incl_tax": str(product.calculate_total()) + invoice.currency,
